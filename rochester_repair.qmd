@@ -32,6 +32,8 @@ set.seed(2010)
 ## Get MSA
 
 ```{r}
+#| label: get-msa
+
 crosswalk <- read.csv( "https://raw.githubusercontent.com/DS4PS/cpp-529-master/master/data/cbsatocountycrosswalk.csv",  stringsAsFactors=F, colClasses="character" )
 
 grep( "^ROCHESTER, NY", crosswalk$msaname, value=TRUE ) 
@@ -45,6 +47,8 @@ these_fips <- crosswalk$fipscounty[these_msp] |>
 ## Get Shapefile
 
 ```{r}
+#| label: get-shapefile
+#| cache: TRUE
 
 state_fips <- substr(these_fips, 1, 2)
 county_fips <- substr(these_fips, 3, 5)
@@ -60,6 +64,8 @@ msp_pop1 <- get_acs( geography = "tract",
 ## Merge in Census Data
 
 ```{r}
+#| label: merge-census-data
+#| cache: TRUE
 
 URL <- "https://github.com/DS4PS/cpp-529-master/raw/master/data/ltdb_std_2010_sample.rds"
 census.dat <- readRDS(gzcon(url( URL )))
@@ -75,6 +81,9 @@ msp <- msp[ ! st_is_empty( msp ) , ]
 ## Transform into a Dorling Cartogram
 
 ```{r}
+#| label: dorling-cartogram
+
+
 msp.sp <- as_Spatial( msp )
 
 class( msp.sp)
@@ -90,15 +99,21 @@ msp.sp <- msp.sp[ msp.sp$POP != 0 & (! is.na( msp.sp$POP )) , ]
 msp.sp$pop.w <- msp.sp$POP / 9000 # max(msp.sp$POP)   # standardizes it to max of 1.5
 msp_dorling <- cartogram_dorling( x=msp.sp, weight="pop.w", k=0.05 )
 
-plot( msp_dorling )
+
 
 tm_shape( msp_dorling ) + 
-  tm_polygons( size="POP", col="hinc12", n=7, style="quantile", palette="Spectral" ) 
+  tm_polygons( size="POP", col="hinc12", n=7, style="quantile", palette="Spectral" )
+
+plot( msp_dorling + msp.sp)
+
 ```
 
 ## Clustering
 
 ```{r}
+#| label: cluster-neighborhoods
+#| cache: TRUE
+
 keep.these <- c("pnhwht12", "pnhblk12", "phisp12", "pntv12", "pfb12", "polang12", 
 "phs12", "pcol12", "punemp12", "pflabf12", "pprof12", "pmanuf12", 
 "pvet12", "psemp12", "hinc12", "incpc12", "ppov12", "pown12", 
@@ -121,6 +136,8 @@ plot( fit, what = "classification" )
 ## Identifying Neighborhood Clusters
 
 ```{r}
+#| label: identify-neighborhood-clusters
+
 data.dictionary <- 
 structure(list(LABEL = c("pnhwht12", "pnhblk12", "phisp12", 
 "pntv12", "pfb12", "polang12", "phs12", "pcol12", "punemp12", 
@@ -235,3 +252,19 @@ plot( fit3, what = "classification" )
 plot( fit2, what = "classification" )
 
 ```
+```{r}
+
+d2$cluster <- d2$cluster <- as.factor( paste0("GROUP-",fit$classification) )
+
+
+ggplot( d2, aes( x=pcol12) ) +        
+  geom_density( alpha = 0.5, fill="blue" ) +
+  xlab( "Percent with a College Degree" ) + facet_wrap( ~ cluster, nrow=2 ) + theme_minimal()
+
+ggplot( d2, aes( x=phisp12 ) ) + 
+        geom_density( alpha = 0.5, fill="blue" ) + # xlim( -3, 3 ) +
+        xlab( "Percent Hispanic" ) + facet_wrap( ~ cluster, nrow=2 ) + theme_minimal()
+
+
+```
+
