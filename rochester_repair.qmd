@@ -5,23 +5,233 @@ format: pdf
 editor: visual
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Packages
 
 ```{r}
-1 + 1
+
+library( geojsonio )   # read shapefiles
+library( sp )          # work with shapefiles
+library( sf )          # work with shapefiles - simple features format
+library( mclust )      # cluster analysis 
+library( tmap )        # theme maps
+library( ggplot2 )     # graphing 
+library( ggthemes )    # nice formats for ggplots
+library( dplyr )       # data wrangling 
+library( pander )      # formatting RMD tables
+library( tidycensus )
+
+library( cartogram )  # spatial maps w/ tract size bias reduction
+
+census_api_key('f8acece5d0048351481060b7ea04587e089d4c13', install = F)
+
+
+set.seed(2010)
+
 ```
 
-You can add options to executable code like this
+## Get MSA
 
 ```{r}
-#| echo: false
-2 * 2
+crosswalk <- read.csv( "https://raw.githubusercontent.com/DS4PS/cpp-529-master/master/data/cbsatocountycrosswalk.csv",  stringsAsFactors=F, colClasses="character" )
+
+grep( "^ROCHESTER, NY", crosswalk$msaname, value=TRUE ) 
+
+these_msp <- crosswalk$msaname == "ROCHESTER, NY"
+these_fips <- crosswalk$fipscounty[these_msp] |>
+  na.omit()
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+## Get Shapefile
+
+```{r}
+
+state_fips <- substr(these_fips, 1, 2)
+county_fips <- substr(these_fips, 3, 5)
+
+msp_pop1 <- get_acs( geography = "tract", 
+                     variables = "B01003_001",
+                     state = "New York", county = county_fips[state_fips=="36"], 
+                     geometry = TRUE ) |>
+         select( GEOID, estimate ) |>
+         rename( POP=estimate )
+```
+
+## Merge in Census Data
+
+```{r}
+
+URL <- "https://github.com/DS4PS/cpp-529-master/raw/master/data/ltdb_std_2010_sample.rds"
+census.dat <- readRDS(gzcon(url( URL )))
+
+# can merge an sf object and data.frame
+msp <- merge( msp_pop1, census.dat, by.x="GEOID", by.y="tractid" )
+
+# make sure there are no empty polygons
+msp <- msp[ ! st_is_empty( msp ) , ]
+
+```
+
+## Transform into a Dorling Cartogram
+
+```{r}
+msp.sp <- as_Spatial( msp )
+
+class( msp.sp)
+
+plot(msp.sp)
+
+# project map and remove empty tracts
+msp.sp <- spTransform( msp.sp, CRS("+init=epsg:3395"))
+msp.sp <- msp.sp[ msp.sp$POP != 0 & (! is.na( msp.sp$POP )) , ]
+
+# convert census tract polygons to dorling cartogram
+# no idea why k=0.03 works, but it does - default is k=5
+msp.sp$pop.w <- msp.sp$POP / 9000 # max(msp.sp$POP)   # standardizes it to max of 1.5
+msp_dorling <- cartogram_dorling( x=msp.sp, weight="pop.w", k=0.05 )
+
+plot( msp_dorling )
+
+tm_shape( msp_dorling ) + 
+  tm_polygons( size="POP", col="hinc12", n=7, style="quantile", palette="Spectral" ) 
+```
+
+## Clustering
+
+```{r}
+keep.these <- c("pnhwht12", "pnhblk12", "phisp12", "pntv12", "pfb12", "polang12", 
+"phs12", "pcol12", "punemp12", "pflabf12", "pprof12", "pmanuf12", 
+"pvet12", "psemp12", "hinc12", "incpc12", "ppov12", "pown12", 
+"pvac12", "pmulti12", "mrent12", "mhmval12", "p30old12", "p10yrs12", 
+"p18und12", "p60up12", "p75up12", "pmar12", "pwds12", "pfhh12")
+
+d1 <- msp_dorling@data
+d2 <- select( d1, keep.these )
+d3 <- apply( d2, 2, scale )
+head( d3[,1:6] ) %>% pander()
+
+fit <- Mclust( d3 )
+msp_dorling$cluster <- as.factor( fit$classification )
+summary( fit )
+
+plot( fit, what = "classification" )
+
+```
+
+## Identifying Neighborhood Clusters
+
+```{r}
+data.dictionary <- 
+structure(list(LABEL = c("pnhwht12", "pnhblk12", "phisp12", 
+"pntv12", "pfb12", "polang12", "phs12", "pcol12", "punemp12", 
+"pflabf12", "pprof12", "pmanuf12", "pvet12", "psemp12", "hinc12", 
+"incpc12", "ppov12", "pown12", "pvac12", "pmulti12", "mrent12", 
+"mhmval12", "p30old12", "p10yrs12", "p18und12", "p60up12", "p75up12", 
+"pmar12", "pwds12", "pfhh12"), VARIABLE = c("Percent white, non-Hispanic", 
+"Percent black, non-Hispanic", "Percent Hispanic", "Percent Native American race", 
+"Percent foreign born", "Percent speaking other language at home, age 5 plus", 
+"Percent with high school degree or less", "Percent with 4-year college degree or more", 
+"Percent unemployed", "Percent female labor force participation", 
+"Percent professional employees", "Percent manufacturing employees", 
+"Percent veteran", "Percent self-employed", "Median HH income, total", 
+"Per capita income", "Percent in poverty, total", "Percent owner-occupied units", 
+"Percent vacant units", "Percent multi-family units", "Median rent", 
+"Median home value", "Percent structures more than 30 years old", 
+"Percent HH in neighborhood 10 years or less", "Percent 17 and under, total", 
+"Percent 60 and older, total", "Percent 75 and older, total", 
+"Percent currently married, not separated", "Percent widowed, divorced and separated", 
+"Percent female-headed families with children")), class = "data.frame", row.names = c(NA, 
+-30L))
+
+
+df.pct <- sapply( d2, ntile, 100 )
+d4 <- as.data.frame( df.pct )
+d4$cluster <- as.factor( paste0("GROUP-",fit$classification) )
+
+num.groups <- length( unique( fit$classification ) )
+
+stats <- 
+d4 %>% 
+  group_by( cluster ) %>% 
+  summarise_each( funs(mean) )
+
+t <- data.frame( t(stats), stringsAsFactors=F )
+names(t) <- paste0( "GROUP.", 1:num.groups )
+t <- t[-1,]
+
+
+
+for( i in 1:num.groups )
+{
+  z <- t[,i]
+  plot( rep(1,30), 1:30, bty="n", xlim=c(-75,100), 
+        type="n", xaxt="n", yaxt="n",
+        xlab="Percentile", ylab="",
+        main=paste("GROUP",i) )
+  abline( v=seq(0,100,25), lty=3, lwd=1.5, col="gray90" )
+  segments( y0=1:30, x0=0, x1=100, col="gray70", lwd=2 )
+  text( -0.2, 1:30, data.dictionary$VARIABLE[-1], cex=0.85, pos=2 )
+  points( z, 1:30, pch=19, col="firebrick", cex=1.5 )
+  axis( side=1, at=c(0,50,100), col.axis="gray", col="gray" )
+}
+```
+
+## Variable Selection
+
+```{r}
+d3 <- as.data.frame(d3)
+dim1 <- d3$pown12 + d3$pmulti12 + d3$p10yrs12 + d3$pwds12 + d3$pfhh12   
+dim2 <- d3$pnhwht12 + d3$pnhblk12 + d3$phisp12 + d3$pfb12 + d3$polang12
+dim3 <- d3$pcol12 + d3$phs12 + d3$pprof12 + d3$hinc12 + d3$mhmval12
+
+
+plot( dim1, dim2, pch=19, col=gray(0.5,0.5), cex=1.5 )
+plot( dim1, dim3, pch=19, col=gray(0.5,0.5), cex=1.5 )
+plot( dim2, dim3, pch=19, col=gray(0.5,0.5), cex=1.5 )
+
+
+# data set of three indices
+d22 <- data.frame( dim1, dim2, dim3 )
+fit2 <- Mclust( d22 )
+summary( fit2 )
+
+msp_dorling$cluster2 <- as.factor( fit2$classification )
+
+
+```
+
+```{r}
+
+msp_dorling$cluster2 <- as.factor( fit2$classification )
+
+# dataset of three census variables 
+d33 <- data.frame( d3$p18und12, d3$pflabf12, d3$hinc12 )
+fit3 <- Mclust( d33 )
+summary( fit3 )
+
+msp_dorling$cluster3 <- as.factor( fit3$classification )
+
+
+
+tmap_mode("plot")
+tmap_style("cobalt")
+
+tm1 <- 
+tm_shape( msp_dorling) + 
+  tm_polygons( col="cluster", palette="Accent"  )
+
+tm2 <- 
+tm_shape( msp_dorling) + 
+  tm_polygons( col="cluster2", palette="Accent"  )
+
+tm3 <- 
+tm_shape( msp_dorling) + 
+  tm_polygons( col="cluster3", palette="Accent"  )
+
+
+tmap_arrange( tm1, tm2, tm3 )
+
+plot( fit3, what = "classification" )
+plot( fit2, what = "classification" )
+
+```
