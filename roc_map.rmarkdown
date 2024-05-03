@@ -1,0 +1,52 @@
+---
+title: "rochester_repair"
+format: html
+editor: visual
+---
+
+
+## Rochester Zones
+
+
+```{r}
+
+library(tidyverse)
+library(leaflet)
+library(plotly)
+library(rjson)
+
+roc_trees <- read_csv('data/roc_trees.csv')
+
+# plot thisroc_trees into a choropleth of plotly
+
+url <- 'https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json'
+counties <- rjson::fromJSON(file=url)
+url2<- "https://raw.githubusercontent.com/plotly/datasets/master/fips-unemp-16.csv"
+df <- read.csv(url2, colClasses=c(fips="36-63000"))
+fig <- plot_ly() 
+
+
+fig <- plot_ly() 
+fig <- fig %>% add_trace(
+    type="choroplethmapbox",
+    geojson=counties,
+    locations=36-63000,
+    z=df$unemp,
+    colorscale="Viridis",
+    zmin=0,
+    zmax=12,
+    marker=list(line=list(
+      width=0),
+      opacity=0.5
+    )
+  )
+fig <- fig %>% layout(
+    mapbox=list(
+      style="carto-positron",
+      zoom =2,
+      center=list(lon= -95.71, lat=37.09))
+  )
+fig
+
+```
+

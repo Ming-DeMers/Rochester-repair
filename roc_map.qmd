@@ -1,0 +1,57 @@
+---
+title: "rochester_repair"
+format: html
+editor: visual
+---
+
+## Rochester Zones
+
+```{r}
+
+library(tidyverse)
+library(leaflet)
+library(plotly)
+library(rjson)
+library(sf)
+library(colorspace)
+library(scales)
+library(ggmap)
+
+
+```
+
+## Trees
+
+```{r}
+#| label: trees
+
+roc_trees <- read_csv('data/roc_trees.csv')
+
+trees <- roc_trees |>
+  group_by(STREET_NAME) |>
+  summarize(tree_count = n())
+
+trees |>
+  arrange(-tree_count) |>
+  head()
+
+```
+
+## Taxes
+
+```{r}
+#| label: taxes
+
+roc_taxes <- read_csv('data/roc_tax_parcel.csv')
+
+taxes <- roc_taxes |>
+  group_by(STREET_NAME) |>
+  summarise(properties = n(),
+            avg_area = mean(STATEDAREA),
+            med_area = median(STATEDAREA),
+            avg_val = mean(CURRENT_TOTAL_VALUE),
+            med_val = median(CURRENT_TOTAL_VALUE))
+
+taxes |>
+  arrange(-med_val)
+```
