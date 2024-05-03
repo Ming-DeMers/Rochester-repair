@@ -18,9 +18,11 @@ library(sf)
 
 roc_trees_geo <- read_sf('data/roc_trees.geojson')
 roc_zones <- read_sf('data/roc_zones.geojson')
+roc_311 <- read_sf('data/311_Case_Data.geojson')
 
-
-  
+roc_311 |>
+  group_by(Subject) |>
+  summarize(count = n())
 ```
 
 ```{r graphs, include=FALSE}
@@ -30,7 +32,20 @@ trees_plot <- plot_ly() |>
     add_sf(
     data = roc_trees_geo,
     color = 'red',
-        type = "scattermapbox") |>
+    type = "scattermapbox") |>
+   layout(
+    mapbox = list(
+      style = "open-street-map",
+      zoom = 11,
+      # Center coordinates for Rochester, NY
+      center = list(lon = -77.6158, lat = 43.1566)  
+    ))
+
+plot_311 <- plot_ly() |>
+    add_sf(
+    data = roc_311,
+    color = ~Subject,
+    type = "scattermapbox") |>
    layout(
     mapbox = list(
       style = "open-street-map",
@@ -40,15 +55,14 @@ trees_plot <- plot_ly() |>
     ))
 
 
-
 ```
 
 ```{r zone, include=FALSE}
 
 
 plot_ly() |>
-    add_sf(data = roc_zones, 
-           color = I("blue"), 
+    add_sf(data = roc_zones,
+           color = I("blue"),
            fill = I("lightblue"), 
            opacity = 0.8,
            type = "scattermapbox") |>
@@ -60,12 +74,20 @@ plot_ly() |>
   )
 ```
 
+
 # Trees in Rochester
+
+```{r}
+#| title: 311 Calls
+
+plot_311
+
+```
+
 
 ```{r}
 #| title: Over Time
 
 trees_plot
-#
 
 ```
