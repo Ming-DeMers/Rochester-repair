@@ -1,0 +1,10 @@
+name: roc_map_qdash
+title:
+username: mdemers
+account: mdemers
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11929877
+bundleId: 8573390
+url: https://mdemers.shinyapps.io/roc_map_qdash/
+version: 1

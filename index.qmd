@@ -1,0 +1,130 @@
+---
+title: "Rochester Interactive Maps"
+format: 
+  dashboard:
+    theme: [cosmo]
+execute:
+  echo: false
+---
+
+## Trees Map
+
+```{r setup, inclue=FALSE, echo=FALSE}
+library(tidyverse)
+library(plotly)
+library(rjson)
+library(tidylog)
+library(sf)
+
+roc_trees_geo <- read_sf('data/roc_trees.geojson')
+roc_zones <- read_sf('data/roc_zones.geojson')
+roc_311 <- read_sf('data/311_Case_Data.geojson')
+roc_homocides <- read_sf('data/roc_homocides.geojson')
+roc_sex_off <- read_sf('data/roc_sex_off.geojson')
+roc_shoot <- read_sf('data/roc_shootings.geojson')
+
+roc_homocides <- roc_homocides |>
+  mutate(ID = IncidentID,
+         date = DateOfDeath,
+         type = "homocide") |>
+  select(ID, date, Latitude, Longitude, geometry, type)
+
+roc_shoot <- roc_shoot |>
+  mutate(date = Occurred_Date,
+         type = "shooting") |>
+  select(ID, date, Latitude, Longitude, geometry, type)
+
+roc_crime <- rbind(roc_homocides, roc_shoot)
+
+#roc_311 |>
+#  group_by(Subject) |>
+#  summarize(count = n())
+```
+
+```{r graphs, include=FALSE}
+
+
+trees_plot <- plot_ly() |>
+    add_sf(
+    data = roc_trees_geo,
+    color = 'red',
+    type = "scattermapbox") |>
+   layout(
+    mapbox = list(
+      style = "open-street-map",
+      zoom = 11,
+      # Center coordinates for Rochester, NY
+      center = list(lon = -77.6158, lat = 43.1566)  
+    ))
+
+plot_311 <- plot_ly() |>
+    add_sf(
+    data = roc_311,
+    color = ~Subject,
+    type = "scattermapbox") |>
+   layout(
+    mapbox = list(
+      style = "open-street-map",
+      zoom = 11,
+      # Center coordinates for Rochester, NY
+      center = list(lon = -77.6158, lat = 43.1566)  
+    ))
+
+crime_plot <- plot_ly() |>
+    add_sf(
+    data = roc_crime,
+    color = ~type,
+    type = "scattermapbox") |>
+   layout(
+    mapbox = list(
+      style = "open-street-map",
+      zoom = 11,
+      # Center coordinates for Rochester, NY
+      center = list(lon = -77.6158, lat = 43.1566)  
+    ))
+
+```
+
+```{r zone, include=FALSE}
+
+
+#plot_ly() |>
+#    add_sf(data = roc_zones,
+#           color = I("blue"),
+#           fill = I("lightblue"), 
+#           opacity = 0.8,
+#           type = "scattermapbox") |>
+#  layout(
+#    mapbox = list(
+#      zoom = 10,  # Initial zoom level
+#      center = list(lon = -77.6158, lat = 43.1566)  # Center coordinates for Rochester, NY
+#    )
+#  )
+```
+
+
+# 311 Calls
+
+```{r}
+#| title: 311 Calls
+
+plot_311
+
+```
+
+# Crime Data
+
+```{r}
+
+crime_plot
+
+```
+
+
+# Rochester's Trees
+```{r}
+#| title: Over Time
+
+trees_plot
+
+```
