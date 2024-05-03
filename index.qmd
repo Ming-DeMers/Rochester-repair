@@ -115,16 +115,19 @@ crime_plot <- plot_ly() |>
 
 # Main Report
 
+The primary findings report.\
+May 2nd, 2024, by Ming DeMers.
+
+\
+*Select other tabs for interactive maps!*
+
 ```{=html}
 
 <center>
   <embed src="report.pdf#toolbar=0" width="800px" height="900px" />
 </center>
 
-
 ```
-
-
 # 311 Calls
 
 ```{r}
