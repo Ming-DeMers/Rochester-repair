@@ -9,7 +9,7 @@ execute:
 
 ## Trees Map
 
-```{r setup, inclue=FALSE, echo=FALSE}
+```{r setup, inclue=FALSE, echo=FALSE, cache=TRUE}
 library(tidyverse)
 library(plotly)
 library(rjson)
@@ -41,7 +41,7 @@ roc_crime <- rbind(roc_homocides, roc_shoot)
 #  summarize(count = n())
 ```
 
-```{r graphs, include=FALSE}
+```{r graphs, include=FALSE, cache=TRUE}
 
 
 trees_plot <- plot_ly() |>
@@ -113,6 +113,17 @@ crime_plot <- plot_ly() |>
 #  )
 ```
 
+# Main Report
+
+```{=html}
+
+<center>
+  <embed src="report.pdf#toolbar=0" width="800px" height="900px" />
+</center>
+
+
+```
+
 
 # 311 Calls
 
@@ -131,8 +142,8 @@ crime_plot
 
 ```
 
-
 # Rochester's Trees
+
 ```{r}
 #| title: Over Time
 
