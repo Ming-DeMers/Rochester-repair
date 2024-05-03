@@ -1,12 +1,15 @@
 ---
 title: "Rochester's Trees"
-format: html
-editor: visual
+format: 
+  dashboard:
+    theme: [cosmo]
+execute:
+  echo: false
 ---
 
 ## Trees Map
 
-```{r}
+```{r setup, inclue=FALSE}
 library(tidyverse)
 library(plotly)
 library(rjson)
@@ -14,13 +17,20 @@ library(tidylog)
 library(sf)
 
 roc_trees_geo <- read_sf('data/roc_trees.geojson')
+roc_zones <- read_sf('data/roc_zones.geojson')
 
-plot_ly() |>
+
+  
+```
+
+```{r graphs, include=FALSE}
+
+
+trees_plot <- plot_ly() |>
     add_sf(
     data = roc_trees_geo,
     color = 'red',
         type = "scattermapbox") |>
-
    layout(
     mapbox = list(
       style = "open-street-map",
@@ -28,14 +38,12 @@ plot_ly() |>
       # Center coordinates for Rochester, NY
       center = list(lon = -77.6158, lat = 43.1566)  
     ))
-  
+
+
+
 ```
 
-```{r}
-
-
-roc_zones <- read_sf('data/roc_zones.geojson')
-
+```{r zone, include=FALSE}
 
 
 plot_ly() |>
@@ -50,6 +58,14 @@ plot_ly() |>
       center = list(lon = -77.6158, lat = 43.1566)  # Center coordinates for Rochester, NY
     )
   )
+```
 
+# Trees in Rochester
+
+```{r}
+#| title: Over Time
+
+trees_plot
+#
 
 ```
