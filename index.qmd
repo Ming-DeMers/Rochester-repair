@@ -2,7 +2,7 @@
 title: "Rochester Interactive Maps"
 format: 
   dashboard:
-    theme: [cosmo]
+    theme: [cosmo, style.css]
 execute:
   echo: false
 ---
@@ -68,7 +68,13 @@ plot_311 <- plot_ly() |>
       zoom = 11,
       # Center coordinates for Rochester, NY
       center = list(lon = -77.6158, lat = 43.1566)  
-    ))
+    ),
+    legend = list(
+            x = 0,
+            y = 0,
+            orientation = "h"
+        ))
+
 
 crime_plot <- plot_ly() |>
     add_sf(
@@ -81,7 +87,12 @@ crime_plot <- plot_ly() |>
       zoom = 11,
       # Center coordinates for Rochester, NY
       center = list(lon = -77.6158, lat = 43.1566)  
-    ))
+    ),
+    legend = list(
+            x = 0, 
+            y = 0, 
+            orientation = "h" 
+        ))
 
 ```
 
